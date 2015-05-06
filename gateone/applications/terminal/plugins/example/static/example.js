@@ -1,13 +1,13 @@
 
 // An example of how to add Google Analytics to your plugin:
-var _gaq = _gaq || []; // We'll actually make our plugin-specific Google Analytics call inside of init()
-(function() { // Load the GA script the Gate One way (you can include this in your own plugin without having to worry about duplicates/conflicts)
-    var u = GateOne.Utils,
-        ga = u.createElement('script', {'id': 'ga', 'type': 'text/javascript', 'async': true, 'src': ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js'}), // Note that prefix is automatically prepended before the 'id' when using createElement()
-        existing = u.getNode('#'+GateOne.prefs.prefix+'ga'), // This is why we need to use the prefix here
-        s = u.getNodes('script')[0];
-    if (!existing) { s.parentNode.insertBefore(ga, s) }
-})();
+//var _gaq = _gaq || []; // We'll actually make our plugin-specific Google Analytics call inside of init()
+//(function() { // Load the GA script the Gate One way (you can include this in your own plugin without having to worry about duplicates/conflicts)
+//    var u = GateOne.Utils,
+//        ga = u.createElement('script', {'id': 'ga', 'type': 'text/javascript', 'async': true, 'src': ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js'}), // Note that prefix is automatically prepended before the 'id' when using createElement()
+//        existing = u.getNode('#'+GateOne.prefs.prefix+'ga'), // This is why we need to use the prefix here
+//        s = u.getNodes('script')[0];
+//    if (!existing) { s.parentNode.insertBefore(ga, s) }
+//})();
 // Note that in order for Google Analytics to work properly the _gaq variable needs to be in the global scope which means you can't wrap it in the sandbox like everything else below.
 
 // This is Gate One's special sandboxing mechanism...  It will wait to load the contained JavaScript until the dependencies are done loading:
@@ -75,12 +75,12 @@ go.Base.update(GateOne.Terminal.Example, { // Everything that we want to be avai
         infoPanel.appendChild(infoPanelLoadGraph);
         infoPanel.appendChild(infoPanelTopButton);
         // This sets a Google Analytics custom variable so you can tell what version of your plugin is in use out in the wild.
-        _gaq.push(
+        /*_gaq.push(
             ['_setAccount', 'UA-30421535-1'], // Replace this with your own UA
             ['_setCustomVar', 1, 'Version', go.VERSION], // You could replace GateOne.VERSION with GateOne.YourPlugin.VERSION
             ['_trackPageview'],
             ['_trackEvent','Plugin Loaded', 'Example']
-        );
+        );*/
     },
     stopGraph: function(result) {
         /**:GateOne.Terminal.Example.stopGraph(result)

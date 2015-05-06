@@ -1,5 +1,5 @@
 
-GateOne.Base.superSandbox("GateOne.SSH", ["GateOne.Bookmarks", "GateOne.Terminal", "GateOne.Terminal.Input", "GateOne.Editor"], function(window, undefined) {
+GateOne.Base.superSandbox("GateOne.PYEXP", ["GateOne.Bookmarks", "GateOne.Terminal", "GateOne.Terminal.Input", "GateOne.Editor"], function(window, undefined) {
 "use strict";
 
 // Sandbox-wide shortcuts
@@ -18,28 +18,28 @@ var document = window.document, // Have to do this because we're sandboxed
     logInfo = GateOne.Logging.logInfo,
     logDebug = GateOne.Logging.logDebug;
 
-// GateOne.SSH (ssh client functions)
-go.Base.module(GateOne, "SSH", "1.1", ['Base']);
-go.SSH.identities = []; // SSH identity objects end up in here
-go.SSH.remoteCmdCallbacks = {};
-go.SSH.remoteCmdErrorbacks = {};
+// GateOne.PYEXP (ssh client functions)
+go.Base.module(GateOne, "PYEXP", "0.1", ['Base']);
+go.PYEXP.identities = []; // PYEXP identity objects end up in here
+go.PYEXP.remoteCmdCallbacks = {};
+go.PYEXP.remoteCmdErrorbacks = {};
 go.noSavePrefs['autoConnectURL'] = null; // So it doesn't get saved in localStorage
-go.Base.update(go.SSH, {
+go.Base.update(go.PYEXP, {
     init: function() {
-        /**:GateOne.SSH.init()
+        /**:GateOne.PYEXP.init()
 
-        Creates the SSH Identity Manager panel, adds some buttons to the Info & Tools panel, and registers the following WebSocket actions & events::
+        Creates the PYEXP Identity Manager panel, adds some buttons to the Info & Tools panel, and registers the following WebSocket actions & events::
 
-            GateOne.Net.addAction('terminal:sshjs_connect', GateOne.SSH.handleConnect);
-            GateOne.Net.addAction('terminal:sshjs_reconnect', GateOne.SSH.handleReconnect);
-            GateOne.Net.addAction('terminal:sshjs_keygen_complete', GateOne.SSH.keygenComplete);
-            GateOne.Net.addAction('terminal:sshjs_save_id_complete', GateOne.SSH.saveComplete);
-            GateOne.Net.addAction('terminal:sshjs_display_fingerprint', GateOne.SSH.displayHostFingerprint);
-            GateOne.Net.addAction('terminal:sshjs_identities_list', GateOne.SSH.incomingIDsAction);
-            GateOne.Net.addAction('terminal:sshjs_delete_identity_complete', GateOne.SSH.deleteCompleteAction);
-            GateOne.Net.addAction('terminal:sshjs_cmd_output', GateOne.SSH.commandCompleted);
-            GateOne.Net.addAction('terminal:sshjs_ask_passphrase', GateOne.SSH.enterPassphraseAction);
-            GateOne.Events.on("terminal:new_terminal", GateOne.SSH.getConnectString);
+            GateOne.Net.addAction('terminal:actjs_connect', GateOne.PYEXP.handleConnect);
+            GateOne.Net.addAction('terminal:actjs_reconnect', GateOne.PYEXP.handleReconnect);
+            GateOne.Net.addAction('terminal:actjs_keygen_complete', GateOne.PYEXP.keygenComplete);
+            GateOne.Net.addAction('terminal:actjs_save_id_complete', GateOne.PYEXP.saveComplete);
+            GateOne.Net.addAction('terminal:actjs_display_fingerprint', GateOne.PYEXP.displayHostFingerprint);
+            GateOne.Net.addAction('terminal:actjs_identities_list', GateOne.PYEXP.incomingIDsAction);
+            GateOne.Net.addAction('terminal:actjs_delete_identity_complete', GateOne.PYEXP.deleteCompleteAction);
+            GateOne.Net.addAction('terminal:actjs_cmd_output', GateOne.PYEXP.commandCompleted);
+            GateOne.Net.addAction('terminal:actjs_ask_passphrase', GateOne.PYEXP.enterPassphraseAction);
+            GateOne.Events.on("terminal:new_terminal", GateOne.PYEXP.getConnectString);
         */
         var prefsPanel = u.getNode('#'+prefix+'panel_prefs'),
             infoPanel = u.getNode('#'+prefix+'panel_info'),
@@ -58,7 +58,7 @@ go.Base.update(go.SSH, {
                             // Wrap in a short timeout to give the server/client time to establish a new terminal connection
                             setTimeout(function() {
                                 // This ensures that we only send this string if it's a new terminal
-                                if (go.Terminal.terminals[term]['title'] == gettext('SSH Connect')) {
+                                if (go.Terminal.terminals[term]['title'] == gettext('PYEXP Connect')) {
                                     go.Terminal.sendString(str + '\n', term);
                                 }
                             }, 500);
@@ -73,7 +73,7 @@ go.Base.update(go.SSH, {
                             termNum = go.Terminal.newTerminal();
                         }
                     } else {
-                        logError(gettext("SSH Plugin:  ssh query string must start with ssh:// or telnet:// (e.g. ssh=ssh://)"));
+                        logError(gettext("PYEXP Plugin:  ssh query string must start with ssh:// or telnet:// (e.g. ssh=ssh://)"));
                     }
                 } else {
                     logError(gettext("Bad characters in ssh query string: ") + str.match(/[\$\n\!\;&` |<>]/));
@@ -81,24 +81,24 @@ go.Base.update(go.SSH, {
             };
         prefsPanelKnownHosts.innerHTML = gettext("Edit Known Hosts");
         prefsPanelKnownHosts.onclick = function() {
-            u.xhrGet(go.prefs.url+'ssh?known_hosts=True', go.SSH.updateKH);
+            u.xhrGet(go.prefs.url+'ssh?known_hosts=True', go.PYEXP.updateKH);
         }
         infoPanelManageIdentities.innerHTML = gettext("Manage Identities");
         infoPanelManageIdentities.onclick = function() {
-            go.SSH.loadIDs();
+            go.PYEXP.loadIDs();
         }
         infoPanelDuplicateSession.innerHTML = gettext("Duplicate Session");
         infoPanelDuplicateSession.onclick = function() {
             var term = localStorage[prefix+'selectedTerminal'];
-            go.SSH.duplicateSession(term);
+            go.PYEXP.duplicateSession(term);
         }
-        h3.innerHTML = gettext("SSH Plugin");
+        h3.innerHTML = gettext("PYEXP Plugin");
         if (infoPanel) {// Only add to the prefs panel if it actually exists (i.e. not in embedded mode) = u.getNode('#'+prefix+'panel_prefs'),
             infoPanel.appendChild(h3);
             infoPanel.appendChild(infoPanelDuplicateSession);
             infoPanel.appendChild(infoPanelManageIdentities);
             infoPanel.appendChild(prefsPanelKnownHosts);
-            go.SSH.createKHPanel();
+            go.PYEXP.createKHPanel();
         }
         // Connect to the given ssh:// URL if we were given an 'ssh' query string variable (e.g. https://gateone/?ssh=ssh://whatever:22)
         if (sshQueryString) {
@@ -124,55 +124,55 @@ go.Base.update(go.SSH, {
                 go.Terminal.Input.capture();
             }
         });
-        go.SSH.createPanel();
-        go.Net.addAction('terminal:sshjs_connect', go.SSH.handleConnect);
-        go.Net.addAction('terminal:sshjs_reconnect', go.SSH.handleReconnect);
-        go.Net.addAction('terminal:sshjs_keygen_complete', go.SSH.keygenComplete);
-        go.Net.addAction('terminal:sshjs_save_id_complete', go.SSH.saveComplete);
-        go.Net.addAction('terminal:sshjs_display_fingerprint', go.SSH.displayHostFingerprint);
-        go.Net.addAction('terminal:sshjs_identities_list', go.SSH.incomingIDsAction);
-        go.Net.addAction('terminal:sshjs_delete_identity_complete', go.SSH.deleteCompleteAction);
-        go.Net.addAction('terminal:sshjs_cmd_output', go.SSH.commandCompleted);
-        go.Net.addAction('terminal:sshjs_ask_passphrase', go.SSH.enterPassphraseAction);
+        go.PYEXP.createPanel();
+        go.Net.addAction('terminal:actjs_connect', go.PYEXP.handleConnect);
+        go.Net.addAction('terminal:actjs_reconnect', go.PYEXP.handleReconnect);
+        go.Net.addAction('terminal:actjs_keygen_complete', go.PYEXP.keygenComplete);
+        go.Net.addAction('terminal:actjs_save_id_complete', go.PYEXP.saveComplete);
+        go.Net.addAction('terminal:actjs_display_fingerprint', go.PYEXP.displayHostFingerprint);
+        go.Net.addAction('terminal:actjs_identities_list', go.PYEXP.incomingIDsAction);
+        go.Net.addAction('terminal:actjs_delete_identity_complete', go.PYEXP.deleteCompleteAction);
+        go.Net.addAction('terminal:actjs_cmd_output', go.PYEXP.commandCompleted);
+        go.Net.addAction('terminal:actjs_ask_passphrase', go.PYEXP.enterPassphraseAction);
         if (!go.prefs.broadcastTerminal) {
-            E.on("terminal:new_terminal", go.SSH.autoConnect);
-            E.on("terminal:new_terminal", go.SSH.getConnectString);
+            E.on("terminal:new_terminal", go.PYEXP.autoConnect);
+            E.on("terminal:new_terminal", go.PYEXP.getConnectString);
         }
         if (!go.prefs.embedded) {
-            go.Input.registerShortcut('KEY_D', {'modifiers': {'ctrl': true, 'alt': true, 'meta': false, 'shift': false}, 'action': 'GateOne.SSH.duplicateSession(localStorage[GateOne.prefs.prefix+"selectedTerminal"])'});
+            go.Input.registerShortcut('KEY_D', {'modifiers': {'ctrl': true, 'alt': true, 'meta': false, 'shift': false}, 'action': 'GateOne.PYEXP.duplicateSession(localStorage[GateOne.prefs.prefix+"selectedTerminal"])'});
         }
     },
     postInit: function() {
-        /**:GateOne.SSH.postInit()
+        /**:GateOne.PYEXP.postInit()
 
         Registers our 'ssh' and 'telnet' protocol handlers with the Bookmarks plugin.
 
         .. note:: These things are run inside of the ``postInit()`` function in order to ensure that `GateOne.Bookmarks` is loaded (and ready-to-go) first.
         */
-        go.Bookmarks.registerURLHandler('ssh', go.SSH.connect);
-        go.Bookmarks.registerIconHandler('ssh', go.SSH.bookmarkIconHandler);
-        go.Bookmarks.registerURLHandler('telnet', go.SSH.connect);
-        go.Bookmarks.registerIconHandler('telnet', go.SSH.bookmarkIconHandler);
+        go.Bookmarks.registerURLHandler('ssh', go.PYEXP.connect);
+        go.Bookmarks.registerIconHandler('ssh', go.PYEXP.bookmarkIconHandler);
+        go.Bookmarks.registerURLHandler('telnet', go.PYEXP.connect);
+        go.Bookmarks.registerIconHandler('telnet', go.PYEXP.bookmarkIconHandler);
     },
     bookmarkIconHandler: function(bookmark) {
-        /**:GateOne.SSH.bookmarkIconHandler(bookmark)
+        /**:GateOne.PYEXP.bookmarkIconHandler(bookmark)
 
-        Saves the `GateOne.Icons.SSH` icon in the given bookmark using `GateOne.Bookmarks.storeFavicon()`.
+        Saves the `GateOne.Icons.PYEXP` icon in the given bookmark using `GateOne.Bookmarks.storeFavicon()`.
 
-        .. note:: This gets registered for the 'ssh' and 'telnet' inside of `GateOne.SSH.postInit()`.
+        .. note:: This gets registered for the 'ssh' and 'telnet' inside of `GateOne.PYEXP.postInit()`.
         */
         go.Bookmarks.storeFavicon(bookmark, go.Icons['ssh']);
     },
     connect: function(URL) {
-        /**:GateOne.SSH.connect(URL)
+        /**:GateOne.PYEXP.connect(URL)
 
-        Connects to the given SSH *URL*.
+        Connects to the given PYEXP *URL*.
 
-        If the current terminal is sitting at the SSH Connect prompt it will be used to make the connection.  Otherwise a new terminal will be opened.
+        If the current terminal is sitting at the PYEXP Connect prompt it will be used to make the connection.  Otherwise a new terminal will be opened.
         */
-        logDebug("GateOne.SSH.connect: " + URL);
+        logDebug("GateOne.PYEXP.connect: " + URL);
         var term = localStorage[prefix+'selectedTerminal'],
-            unconnectedTermTitle = gettext('SSH Connect'), // NOTE: This MUST be equal to the title set by ssh_connect.py or it will send the ssh:// URL to the active terminal
+            unconnectedTermTitle = gettext('PYEXP Connect'), // NOTE: This MUST be equal to the title set by ssh_connect.py or it will send the ssh:// URL to the active terminal
             openNewTerminal = function() {
                 E.once("terminal:new_terminal", u.partial(t.sendString, URL+'\n'));
                 t.newTerminal(); // This will automatically open a new workspace
@@ -189,7 +189,7 @@ go.Base.update(go.SSH, {
         }
     },
     autoConnect: function(term, termUndefined) {
-        /**:GateOne.SSH.autoConnect()
+        /**:GateOne.PYEXP.autoConnect()
 
         Automatically connects to `GateOne.prefs.autoConnectURL` if it set.
         */
@@ -203,11 +203,11 @@ go.Base.update(go.SSH, {
         }
     },
     createPanel: function() {
-        /**:GateOne.SSH.createPanel()
+        /**:GateOne.PYEXP.createPanel()
 
-        Creates the SSH identity management panel (the shell of it anyway).
+        Creates the PYEXP identity management panel (the shell of it anyway).
         */
-        var ssh = go.SSH,
+        var ssh = go.PYEXP,
             existingPanel = u.getNode('#'+prefix+'panel_ssh_ids'),
             sshIDPanel = u.createElement('div', {'id': 'panel_ssh_ids', 'class': '✈panel ✈sectrans ✈panel_ssh_ids'}),
             sshIDHeader = u.createElement('div', {'id': 'ssh_ids_header', 'class': '✈sectrans'}),
@@ -228,7 +228,7 @@ go.Base.update(go.SSH, {
             certSpan = u.createElement('span', {'id': 'ssh_id_certspan', 'class':'✈table_cell ✈table_header_cell'}),
             sortOrder = u.createElement('span', {'id': 'ssh_ids_sort_order', 'style': {'float': 'right', 'margin-left': '.3em', 'margin-top': '-.2em'}}),
             sshIDMetadataDiv = u.createElement('div', {'id': 'ssh_id_metadata', 'class': '✈sectrans ✈ssh_id_metadata'});
-        sshIDHeaderH2.innerHTML = gettext('SSH Identity Manager: Loading...');
+        sshIDHeaderH2.innerHTML = gettext('PYEXP Identity Manager: Loading...');
         panelClose.innerHTML = go.Icons['panelclose'];
         panelClose.onclick = function(e) {
             v.togglePanel('#'+prefix+'panel_ssh_ids'); // Scale away, scale away, scale away.
@@ -353,9 +353,9 @@ go.Base.update(go.SSH, {
         keytypeSpan.innerHTML = gettext("Keytype");
         keytypeSpan.title = gettext("Indicates the type of key used by this identity.  One of RSA, DSA, or ECDSA.");
         certSpan.innerHTML = gettext("Cert");
-        certSpan.title = gettext("This field indicates whether or not there's an X.509 certificate associated with this identity (i.e. a '*name*-cert.pub' file).  X.509 certificates (for use with SSH) are created by signing a public key using a Certificate Authority (CA).  NOTE: In order to use X.509 certificates for authentication with SSH the servers you're connecting to must be configured to trust keys signed by a given CA.");
+        certSpan.title = gettext("This field indicates whether or not there's an X.509 certificate associated with this identity (i.e. a '*name*-cert.pub' file).  X.509 certificates (for use with PYEXP) are created by signing a public key using a Certificate Authority (CA).  NOTE: In order to use X.509 certificates for authentication with PYEXP the servers you're connecting to must be configured to trust keys signed by a given CA.");
         commentSpan.innerHTML = gettext("Comment");
-        commentSpan.title = gettext("This field will contain the comment from the identity's public key.  It comes after the key itself inside its .pub file and if the key was generated by OpenSSH it will typically be something like, 'user@host'.");
+        commentSpan.title = gettext("This field will contain the comment from the identity's public key.  It comes after the key itself inside its .pub file and if the key was generated by OpenPYEXP it will typically be something like, 'user@host'.");
         if (localStorage[prefix+'ssh_ids_sort'] == 'alpha') {
             nameSpan.className = '✈table_cell ✈table_header_cell ✈active';
             nameSpan.appendChild(sortOrder);
@@ -393,11 +393,11 @@ go.Base.update(go.SSH, {
         }
     },
     loadIDs: function() {
-        /**:GateOne.SSH.loadIDs()
+        /**:GateOne.PYEXP.loadIDs()
 
-        Toggles the SSH Identity Manager into view (if not already visible) and asks the server to send us our list of identities.
+        Toggles the PYEXP Identity Manager into view (if not already visible) and asks the server to send us our list of identities.
         */
-        var ssh = go.SSH,
+        var ssh = go.PYEXP,
             existingPanel = u.getNode('#'+prefix+'panel_ssh_ids');
         ssh.delay = 500; // Reset it
         // Make sure the panel is visible
@@ -408,11 +408,11 @@ go.Base.update(go.SSH, {
         go.ws.send(JSON.stringify({'terminal:ssh_get_identities': true}));
     },
     incomingIDsAction: function(message) {
-        /**:GateOne.SSH.incomingIDsAction(message)
+        /**:GateOne.PYEXP.incomingIDsAction(message)
 
-        This gets attached to the 'sshjs_identities_list' WebSocket action.  Adds *message['identities']* to `GateOne.SSH.identities` and places them into the Identity Manager.
+        This gets attached to the 'actjs_identities_list' WebSocket action.  Adds *message['identities']* to `GateOne.PYEXP.identities` and places them into the Identity Manager.
         */
-        var ssh = go.SSH,
+        var ssh = go.PYEXP,
             existingPanel = u.getNode('#'+prefix+'panel_ssh_ids'),
             sshIDHeaderH2 = u.getNode('#'+prefix+'ssh_ids_title'),
             sshIDMetadataDiv = u.getNode('#'+prefix+'ssh_id_metadata'),
@@ -458,14 +458,14 @@ go.Base.update(go.SSH, {
             ssh.delay += 50;
         });
         ssh.delay = 500;
-        sshIDHeaderH2.innerHTML = gettext("SSH Identity Manager");
+        sshIDHeaderH2.innerHTML = gettext("PYEXP Identity Manager");
     },
     displayMetadata: function(identity) {
-        /**:GateOne.SSH.displayMetadata(identity)
+        /**:GateOne.PYEXP.displayMetadata(identity)
 
-        Displays the information about the given *identity* (its name) in the SSH identities metadata area (on the right).  Also displays the buttons that allow the user to delete the identity or upload a certificate.
+        Displays the information about the given *identity* (its name) in the PYEXP identities metadata area (on the right).  Also displays the buttons that allow the user to delete the identity or upload a certificate.
         */
-        var ssh = go.SSH,
+        var ssh = go.PYEXP,
             downloadButton = u.createElement('button', {'id': 'ssh_id_download', 'type': 'submit', 'value': gettext('Submit'), 'class': '✈button ✈black'}),
             deleteIDButton = u.createElement('button', {'id': 'ssh_id_delete', 'class': '✈ssh_id_delete ✈button ✈black', 'type': 'submit', 'value': gettext('Submit')}),
             uploadCertificateButton = u.createElement('button', {'id': 'ssh_id_upload_cert', 'type': 'submit', 'value': gettext('Submit'), 'class': '✈button ✈black'}),
@@ -551,13 +551,13 @@ go.Base.update(go.SSH, {
         }
     },
     createIDItem: function(container, IDObj, delay) {
-        /**:GateOne.SSH.displayMetadata(container, IDObj, delay)
+        /**:GateOne.PYEXP.displayMetadata(container, IDObj, delay)
 
-        Creates an SSH identity element using *IDObj* and places it into *container*.
+        Creates an PYEXP identity element using *IDObj* and places it into *container*.
 
         *delay* controls how long it will wait before using a CSS3 effect to move it into view.
         */
-        var ssh = go.SSH,
+        var ssh = go.PYEXP,
             objName = IDObj['name'],
             elem = u.createElement('div', {'class':'✈sectrans ✈ssh_id', 'name': '✈ssh_id'}),
             IDViewOptions = u.createElement('span', {'class': '✈ssh_id_options'}),
@@ -627,12 +627,12 @@ go.Base.update(go.SSH, {
         return elem;
     },
     getMaxIDs: function(elem) {
-        /**:GateOne.SSH.getMaxIDs(elem)
+        /**:GateOne.PYEXP.getMaxIDs(elem)
 
-        Calculates and returns the number of SSH identities that will fit in the given element ID (elem).
+        Calculates and returns the number of PYEXP identities that will fit in the given element ID (elem).
         */
         try {
-            var ssh = go.SSH,
+            var ssh = go.PYEXP,
                 node = u.getNode(elem),
                 tempID = {
                     'bits': '2048',
@@ -663,11 +663,11 @@ go.Base.update(go.SSH, {
         return max;
     },
     newIDForm: function() {
-        /**:GateOne.SSH.newIDForm()
+        /**:GateOne.PYEXP.newIDForm()
 
-        Displays the dialog/form where the user can create or edit an SSH identity.
+        Displays the dialog/form where the user can create or edit an PYEXP identity.
         */
-        var ssh = go.SSH,
+        var ssh = go.PYEXP,
             goDiv = u.getNode(go.prefs.goDiv),
             sshIDPanel = u.getNode('#'+prefix+'panel_ssh_ids'),
             identityForm = u.createElement('form', {'name': prefix+'ssh_id_form', 'class': '✈ssh_id_form'}),
@@ -787,7 +787,7 @@ go.Base.update(go.SSH, {
         buttonContainer.appendChild(submit);
         buttonContainer.appendChild(cancel);
         identityForm.appendChild(buttonContainer);
-        var closeDialog = go.Visual.dialog(gettext('New SSH Identity'), identityForm, {'class': '✈prefsdialog', 'style': {'width': '20em'}}); // Just an initial width
+        var closeDialog = go.Visual.dialog(gettext('New PYEXP Identity'), identityForm, {'class': '✈prefsdialog', 'style': {'width': '20em'}}); // Just an initial width
         cancel.onclick = closeDialog;
         setTimeout(function() {
             setTimeout(function() {
@@ -816,11 +816,11 @@ go.Base.update(go.SSH, {
         }
     },
     uploadIDForm: function() {
-        /**:GateOne.SSH.uploadIDForm()
+        /**:GateOne.PYEXP.uploadIDForm()
 
-        Displays the dialog/form where a user can upload an SSH identity (that's already been created).
+        Displays the dialog/form where a user can upload an PYEXP identity (that's already been created).
         */
-        var ssh = go.SSH,
+        var ssh = go.PYEXP,
             goDiv = go.node,
             sshIDPanel = u.getNode('#'+prefix+'panel_ssh_ids'),
             uploadIDForm = u.createElement('form', {'name': prefix+'ssh_upload_id_form', 'class': '✈ssh_id_form'}),
@@ -853,7 +853,7 @@ go.Base.update(go.SSH, {
         buttonContainer.appendChild(submit);
         buttonContainer.appendChild(cancel);
         uploadIDForm.appendChild(buttonContainer);
-        var closeDialog = go.Visual.dialog(gettext('Upload SSH Identity'), uploadIDForm, {'class': '✈prefsdialog', 'style': {'width': '20em'}});
+        var closeDialog = go.Visual.dialog(gettext('Upload PYEXP Identity'), uploadIDForm, {'class': '✈prefsdialog', 'style': {'width': '20em'}});
         cancel.onclick = closeDialog;
         uploadIDForm.onsubmit = function(e) {
             // Don't actually submit it
@@ -922,7 +922,7 @@ go.Base.update(go.SSH, {
         }
     },
     uploadCertificateForm: function(identity) {
-        /**:GateOne.SSH.uploadCertificateForm(identity)
+        /**:GateOne.PYEXP.uploadCertificateForm(identity)
 
         Displays the dialog/form where a user can add or replace a certificate associated with their identity.
 
@@ -969,7 +969,7 @@ go.Base.update(go.SSH, {
         };
     },
     enterPassphraseAction: function(settings) {
-        /**:GateOne.SSH.enterPassphraseAction(settings)
+        /**:GateOne.PYEXP.enterPassphraseAction(settings)
 
         Displays the dialog/form where a user can enter a passphrase for a given identity (called by the server if something requires it).
         */
@@ -986,7 +986,7 @@ go.Base.update(go.SSH, {
         submit.innerHTML = "Submit";
         cancel.innerHTML = "Cancel";
         passphrase.autofocus = "autofocus";
-        explanation.innerHTML = gettext("The private key for this SSH identity is protected by a passphrase.  Please enter the passphrase so a public key can be generated.");
+        explanation.innerHTML = gettext("The private key for this PYEXP identity is protected by a passphrase.  Please enter the passphrase so a public key can be generated.");
         safetyNote.innerHTML = "<b>" + gettext("NOTE:") + "</b> " + gettext("This passphrase will only be used to extract the public key and will not be stored.");
         passphraseLabel.innerHTML = gettext("Passphrase");
         passphraseLabel.htmlFor = prefix+'ssh_passphrase';
@@ -1014,30 +1014,30 @@ go.Base.update(go.SSH, {
         }
     },
     getConnectString: function(term) {
-        /**:GateOne.SSH.getConnectString(term)
+        /**:GateOne.PYEXP.getConnectString(term)
 
-        Asks the SSH plugin on the Gate One server what the SSH connection string is for the given *term*.
+        Asks the PYEXP plugin on the Gate One server what the PYEXP connection string is for the given *term*.
         */
         logDebug('getConnectString: ' + term);
         go.ws.send(JSON.stringify({'terminal:ssh_get_connect_string': term}));
     },
     deleteCompleteAction: function(message) {
-        /**:GateOne.SSH.deleteCompleteAction(message)
+        /**:GateOne.PYEXP.deleteCompleteAction(message)
 
-        Called when an identity is deleted, calls :js:meth:`GateOne.SSH.loadIDs`
+        Called when an identity is deleted, calls :js:meth:`GateOne.PYEXP.loadIDs`
         */
-        go.SSH.loadIDs();
+        go.PYEXP.loadIDs();
     },
     handleConnect: function(connectString) {
-        /**:GateOne.SSH.handleConnect(connectString)
+        /**:GateOne.PYEXP.handleConnect(connectString)
 
-        Handles the `terminal:sshjs_connect` WebSocket action which should provide an SSH *connectString* in the form of 'user@host:port'.
+        Handles the `terminal:actjs_connect` WebSocket action which should provide an PYEXP *connectString* in the form of 'user@host:port'.
 
         The *connectString* will be stored in `GateOne.Terminal.terminals[term]['sshConnectString']` which is meant to be used in duplicating terminals (because you can't rely on the title).
 
-        Also requests the host's public SSH key so it can be displayed to the user.
+        Also requests the host's public PYEXP key so it can be displayed to the user.
         */
-        logDebug('sshjs_connect: ' + connectString);
+        logDebug('actjs_connect: ' + connectString);
         var host = connectString.split('@')[1].split(':')[0],
             port = connectString.split('@')[1].split(':')[1],
             message = {'host': host, 'port': port},
@@ -1046,9 +1046,9 @@ go.Base.update(go.SSH, {
         go.ws.send(JSON.stringify({'terminal:ssh_get_host_fingerprint': message}));
     },
     handleReconnect: function(message) {
-        /**:GateOne.SSH.handleReconnect(message)
+        /**:GateOne.PYEXP.handleReconnect(message)
 
-        Handles the `terminal:sshjs_reconnect` WebSocket action which should provide an object containing each terminal's SSH connection string.  Example *message*::
+        Handles the `terminal:actjs_reconnect` WebSocket action which should provide an object containing each terminal's PYEXP connection string.  Example *message*::
 
             {"term": 1, "connect_string": "user@host1:22"}
         */
@@ -1058,11 +1058,11 @@ go.Base.update(go.SSH, {
         }
     },
     keygenComplete: function(message) {
-        /**:GateOne.SSH.keygenComplete(message)
+        /**:GateOne.PYEXP.keygenComplete(message)
 
         Called when we receive a message from the server indicating a keypair was generated successfully.
         */
-        var ssh = go.SSH;
+        var ssh = go.PYEXP;
         if (message['result'] == 'Success') {
             v.displayMessage(gettext('Keypair generation complete.'));
         } else {
@@ -1071,11 +1071,11 @@ go.Base.update(go.SSH, {
         ssh.loadIDs();
     },
     saveComplete: function(message) {
-        /**:GateOne.SSH.saveComplete(message)
+        /**:GateOne.PYEXP.saveComplete(message)
 
         Called when we receive a message from the server indicating the uploaded identity was saved.
         */
-        var ssh = go.SSH;
+        var ssh = go.PYEXP;
         if (message['result'] == 'Success') {
             v.displayMessage(gettext('Identity saved successfully.'));
         } else {
@@ -1084,9 +1084,9 @@ go.Base.update(go.SSH, {
         ssh.loadIDs();
     },
     duplicateSession: function(term) {
-        /**:GateOne.SSH.duplicateSession(term)
+        /**:GateOne.PYEXP.duplicateSession(term)
 
-        Duplicates the SSH session at *term* in a new terminal.
+        Duplicates the PYEXP session at *term* in a new terminal.
         */
         var connectString = go.Terminal.terminals[term]['sshConnectString'],
             connectFunc = function(term) {
@@ -1103,7 +1103,7 @@ go.Base.update(go.SSH, {
         go.Terminal.newTerminal();
     },
     updateKH: function(known_hosts) {
-        /**:GateOne.SSH.updateKH(known_hosts)
+        /**:GateOne.PYEXP.updateKH(known_hosts)
 
         Updates the sshKHTextArea with the given *known_hosts* file.
 
@@ -1119,7 +1119,7 @@ go.Base.update(go.SSH, {
         v.togglePanel('#'+prefix+'panel_known_hosts', enableEditor);
     },
     createKHPanel: function() {
-        /**:GateOne.SSH.createKHPanel()
+        /**:GateOne.PYEXP.createKHPanel()
 
         Creates a panel where the user can edit their known_hosts file and appends it to '#gateone'.
 
@@ -1136,7 +1136,7 @@ go.Base.update(go.SSH, {
                 'method': 'post',
                 'action': go.prefs.url+'ssh?known_hosts=True'
             });
-        sshHeader.innerHTML = '<h2>' + gettext('SSH Plugin: Edit Known Hosts') + '</h2>';
+        sshHeader.innerHTML = '<h2>' + gettext('PYEXP Plugin: Edit Known Hosts') + '</h2>';
         sshHeader.appendChild(sshHRFix); // The HR here fixes an odd rendering bug with Chrome on Mac OS X
         save.innerHTML = gettext("Save");
         cancel.innerHTML = gettext("Cancel");
@@ -1164,7 +1164,7 @@ go.Base.update(go.SSH, {
                         return;
                     }
                     if (e.target.readyState == 4 && status == 200 && e.target.responseText) {
-                        v.displayMessage(gettext("SSH Plugin: known_hosts saved."));
+                        v.displayMessage(gettext("PYEXP Plugin: known_hosts saved."));
                         // Hide the panel
                         v.togglePanel('#'+prefix+'panel_known_hosts');
                     }
@@ -1191,14 +1191,14 @@ go.Base.update(go.SSH, {
         u.getNode(go.prefs.goDiv).appendChild(sshPanel);
     },
     displayHostFingerprint: function(message) {
-        /**:GateOne.SSH.displayHostFingerprint(message)
+        /**:GateOne.PYEXP.displayHostFingerprint(message)
 
-        Displays the host's key as sent by the server via the 'sshjs_display_fingerprint' WebSocket action.
+        Displays the host's key as sent by the server via the 'actjs_display_fingerprint' WebSocket action.
 
         The fingerprint will be colorized using the hex values of the fingerprint as the color code with the last value highlighted in bold.
         */
-        // Example message: {"sshjs_display_fingerprint": {"result": "Success", "fingerprint": "cc:2f:b9:4f:f6:c0:e5:1d:1b:7a:86:7b:ff:86:97:5b"}}
-       /* if (message['result'] == 'Success') {
+        // Example message: {"actjs_display_fingerprint": {"result": "Success", "fingerprint": "cc:2f:b9:4f:f6:c0:e5:1d:1b:7a:86:7b:ff:86:97:5b"}}
+        /*if (message['result'] == 'Success') {
             var fingerprint = message['fingerprint'],
                 hexes = fingerprint.split(':'),
                 text = '',
@@ -1221,9 +1221,9 @@ go.Base.update(go.SSH, {
         }*/
     },
     commandCompleted: function(message) {
-        /**:GateOne.SSH.commandCompleted(message)
+        /**:GateOne.PYEXP.commandCompleted(message)
 
-        Uses the contents of *message* to report the results of the command executed via :js:meth:`~GateOne.SSH.execRemoteCmd`.
+        Uses the contents of *message* to report the results of the command executed via :js:meth:`~GateOne.PYEXP.execRemoteCmd`.
 
         The *message* should be something like::
 
@@ -1236,11 +1236,11 @@ go.Base.update(go.SSH, {
 
         If 'result' is anything other than 'Success' the error will be displayed to the user.
 
-        If a callback was registered in :js:attr:`GateOne.SSH.remoteCmdCallbacks[term]` it will be called like so::
+        If a callback was registered in :js:attr:`GateOne.PYEXP.remoteCmdCallbacks[term]` it will be called like so::
 
             callback(message['output'])
 
-        Otherwise the output will just be displayed to the user.  After the callback has executed it will be removed from `GateOne.SSH.remoteCmdCallbacks`.
+        Otherwise the output will just be displayed to the user.  After the callback has executed it will be removed from `GateOne.PYEXP.remoteCmdCallbacks`.
         */
         var term = message['term'],
             cmd = message['cmd'],
@@ -1248,29 +1248,29 @@ go.Base.update(go.SSH, {
             result = message['result'];
         if (result != 'Success') {
             v.displayMessage(gettext("Error executing background command, ") + "'" + cmd + "' " + gettext("on terminal ") + term + ": " + result);
-            if (go.SSH.remoteCmdErrorbacks[term][cmd]) {
-                go.SSH.remoteCmdErrorbacks[term][cmd](result);
-                delete go.SSH.remoteCmdErrorbacks[term][cmd];
+            if (go.PYEXP.remoteCmdErrorbacks[term][cmd]) {
+                go.PYEXP.remoteCmdErrorbacks[term][cmd](result);
+                delete go.PYEXP.remoteCmdErrorbacks[term][cmd];
             }
             return;
         }
-        if (go.SSH.remoteCmdCallbacks[term][cmd]) {
-            go.SSH.remoteCmdCallbacks[term][cmd](output);
-            delete go.SSH.remoteCmdCallbacks[term][cmd];
+        if (go.PYEXP.remoteCmdCallbacks[term][cmd]) {
+            go.PYEXP.remoteCmdCallbacks[term][cmd](output);
+            delete go.PYEXP.remoteCmdCallbacks[term][cmd];
         } else { // If you don't have an associated callback it will display and log the output:  VERY useful in debugging!
             v.displayMessage(gettext("Remote command output from terminal ") + term + ": " + output);
         }
     },
     execRemoteCmd: function(term, command, callback, errorback) {
-        /**:GateOne.SSH.execRemoteCmd(term, command, callback, errorback)
+        /**:GateOne.PYEXP.execRemoteCmd(term, command, callback, errorback)
 
-        Executes *command* by creating a secondary shell in the background using the multiplexed tunnel of *term* (works just like :js:meth:`~GateOne.SSH.duplicateSession`).
+        Executes *command* by creating a secondary shell in the background using the multiplexed tunnel of *term* (works just like :js:meth:`~GateOne.PYEXP.duplicateSession`).
 
         Calls *callback* when the result of *command* comes back.
 
         Calls *errorback* if there's an error executing the command.
         */
-        var ssh = go.SSH;
+        var ssh = go.PYEXP;
         // Create an associative array to keep track of which callback belongs to which command (so we can support multiple simultaneous commands/callbacks for the same terminal)
         if (!ssh.remoteCmdCallbacks[term]) {
             ssh.remoteCmdCallbacks[term] = {};
@@ -1289,7 +1289,7 @@ go.Base.update(go.SSH, {
     }
 });
 
-// This is the favicon that gets used for SSH URLs in bookmarks
-go.Icons['ssh'] = 'data:image/x-icon;base64,AAABAAIABQkAAAEAIAAAAQAAJgAAABAQAAABAAgAaAUAACYBAAAoAAAABQAAABIAAAABACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA////SP///0j///9I////SP///w////8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A+AAAAPgAAAD4AAAA+AAAAPgAAAD4AAAA+AAAAPgAAAD4AAAAKAAAABAAAAAgAAAAAQAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACcnJwAoKSkAKikpACorKgArKysAKywrACwtLAAtLi0ALi4tAC0uLgAuLy4ALi8vAC8wLwAwMC8AMDAwADAxMAAxMjAAMTIxADIzMQAyMzIAMjMzADI0MgAyNDMAMzQ0ADQ0NAAzNTQANDU0ADQ2NAA0NjUANTY1ADU2NgA1NzUANjc2ADY3NwA3ODcANjg4ADc5NwA3OTgAODk4ADg5OQA4OjkAOTo5ADk6OgA5OzoAOjs6ADo7OwA6PDsAOzw7ADw9PAA8PjwAPD49ADw+PgA9Pz4APT8/AD1APgA/QD8AP0E/AEBBQQBAQkAAQEJBAEFCQQBBQ0IAQkRCAEJEQwBDRUMAREZFAEZIRwBGSUYAR0lHAEdKSABHSkkASEtJAElMSgBKTUsAS05MAE5QTwBnaGcAkXBUAG1wbgB+f34AgoOCAMOLWgDQlmMAj5CQAJCRkQChoqEAsrOyALO0swC3t7cAvL29AL29vQC+v74AxcXFAMbGxgDHx8cAyMjIAMrKygDLy8sAzMzMAM3NzQDOzs4Az8/PANHR0QDS0tIA1NTUANbW1gDb29sA39/fAOTk5ADo6OgA6enpAO3t7QDv7+8A8fHxAP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABzc3Nzc3Nzc3Nzc3Nzc3Nzc1xoaGhoaGhoaGhoaGhac3NlNjEtJiEYEQ0IBQIAXXNzZDk0MC4kHxcRDAcEAV1zc2M9ODRPKSQdFBALBgNdc3NiQExVW1AoIhsVDwoGXnNzYUE/O1NXLighGRMOCV9zc2FDS1ZYNDAsJh0aEgxgc3NhRk5XNDQ0LyojHBYRYnNzYUhFVFlUODMvKCEcFGVzc2FKR0RUQDw3MiwnIBpmc3NhSklHQkE+OjUyKyUeZ3NzaGZpamtsbW9wbmxramhzc2hNcnJycnJycnJycmhNc3NRYWFhYXFRUVFRUVFRUXNzUVFRUVFRUVFRUVFRUlJz//8AAIABAACAAQAAgAEAAIABAACAAQAAgAEAAIABAACAAQAAgAEAAIABAACAAQAAgAEAAIABAACAAQAAgAEAAA==';
+// This is the favicon that gets used for PYEXP URLs in bookmarks
+go.Icons['act'] = 'data:image/x-icon;base64,AAABAAIABQkAAAEAIAAAAQAAJgAAABAQAAABAAgAaAUAACYBAAAoAAAABQAAABIAAAABACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA////SP///0j///9I////SP///w////8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A////AP///wD///8A+AAAAPgAAAD4AAAA+AAAAPgAAAD4AAAA+AAAAPgAAAD4AAAAKAAAABAAAAAgAAAAAQAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACcnJwAoKSkAKikpACorKgArKysAKywrACwtLAAtLi0ALi4tAC0uLgAuLy4ALi8vAC8wLwAwMC8AMDAwADAxMAAxMjAAMTIxADIzMQAyMzIAMjMzADI0MgAyNDMAMzQ0ADQ0NAAzNTQANDU0ADQ2NAA0NjUANTY1ADU2NgA1NzUANjc2ADY3NwA3ODcANjg4ADc5NwA3OTgAODk4ADg5OQA4OjkAOTo5ADk6OgA5OzoAOjs6ADo7OwA6PDsAOzw7ADw9PAA8PjwAPD49ADw+PgA9Pz4APT8/AD1APgA/QD8AP0E/AEBBQQBAQkAAQEJBAEFCQQBBQ0IAQkRCAEJEQwBDRUMAREZFAEZIRwBGSUYAR0lHAEdKSABHSkkASEtJAElMSgBKTUsAS05MAE5QTwBnaGcAkXBUAG1wbgB+f34AgoOCAMOLWgDQlmMAj5CQAJCRkQChoqEAsrOyALO0swC3t7cAvL29AL29vQC+v74AxcXFAMbGxgDHx8cAyMjIAMrKygDLy8sAzMzMAM3NzQDOzs4Az8/PANHR0QDS0tIA1NTUANbW1gDb29sA39/fAOTk5ADo6OgA6enpAO3t7QDv7+8A8fHxAP///wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABzc3Nzc3Nzc3Nzc3Nzc3Nzc1xoaGhoaGhoaGhoaGhac3NlNjEtJiEYEQ0IBQIAXXNzZDk0MC4kHxcRDAcEAV1zc2M9ODRPKSQdFBALBgNdc3NiQExVW1AoIhsVDwoGXnNzYUE/O1NXLighGRMOCV9zc2FDS1ZYNDAsJh0aEgxgc3NhRk5XNDQ0LyojHBYRYnNzYUhFVFlUODMvKCEcFGVzc2FKR0RUQDw3MiwnIBpmc3NhSklHQkE+OjUyKyUeZ3NzaGZpamtsbW9wbmxramhzc2hNcnJycnJycnJycmhNc3NRYWFhYXFRUVFRUVFRUXNzUVFRUVFRUVFRUVFRUlJz//8AAIABAACAAQAAgAEAAIABAACAAQAAgAEAAIABAACAAQAAgAEAAIABAACAAQAAgAEAAIABAACAAQAAgAEAAA==';
 
 });

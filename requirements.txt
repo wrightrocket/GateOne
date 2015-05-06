@@ -1,0 +1,24 @@
+Required:
+
+Python >= 2.6 (2.7 recommended)
+
+Python needs to be built with SSL support if using OpenSSL
+
+Tornado >= 2.1
+
+OpenSSL
+
+pyOpenSSL >= 0.12
+
+
+
+Optional:
+
+python kerberos
+
+dtach 
+
+mutagen
+
+python-imaging
+
